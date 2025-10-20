@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownView, Notice } from "obsidian";
+import { FrontMatterCache, getFrontMatterInfo, getLinkpath, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownView, Notice, parseFrontMatterAliases, parseFrontMatterEntry, parseFrontMatterStringArray, parseFrontMatterTags, parseLinktext, Vault } from "obsidian";
 import ColorPalette, { urlRegex } from "main";
 import { ColorPaletteSettings } from "settings";
 import { Palette, PaletteSettings, Status } from "./Palette";
@@ -9,18 +9,19 @@ import { PaletteMenu } from "./PaletteMenu";
 export class PaletteMRC extends MarkdownRenderChild {
     plugin: ColorPalette;
     pluginSettings: ColorPaletteSettings;
-	input: string;
+    input: string;
     palette: Palette
     context: MarkdownPostProcessorContext;
     editModeChanges: { colors: string[], settings: Partial<PaletteSettings> | undefined };
+    wikiLinkRegex = /(\[\[.*\]\])+/;
 
-	constructor(plugin: ColorPalette, containerEl: HTMLElement, input: string, context: MarkdownPostProcessorContext) {
+    constructor(plugin: ColorPalette, containerEl: HTMLElement, input: string, context: MarkdownPostProcessorContext) {
         super(containerEl);
         this.plugin = plugin;
         this.pluginSettings = plugin.settings;
         this.input = input;
         this.context = context;
-	}
+    }
 
     onload(): void {
         this.update();
@@ -29,9 +30,9 @@ export class PaletteMRC extends MarkdownRenderChild {
 
         this.containerEl.addEventListener('contextmenu', (e) => {
             // Ensure palette is valid before creating a new menu
-            if(this.palette.status === Status.VALID) {
+            if (this.palette.status === Status.VALID) {
                 const paletteMenu = new PaletteMenu(this.plugin.app, this.context, this.palette, (colors, settings) => {
-                    if(colors == undefined) this.setPaletteInput('');
+                    if (colors == undefined) this.setPaletteInput('');
                     else this.setPaletteInput(createPaletteBlock({ colors, settings }));
                 });
                 paletteMenu.showAtMouseEvent(e);
@@ -57,7 +58,7 @@ export class PaletteMRC extends MarkdownRenderChild {
         const { colors, settings } = this.calcColorsAndSettings(this.input);
 
         // Set editModeChanges initial values if valid
-        if(typeof colors !== 'string' && typeof settings !== 'string') this.editModeChanges = {colors, settings};
+        if (typeof colors !== 'string' && typeof settings !== 'string') this.editModeChanges = { colors, settings };
 
         // Create new palette
         this.palette = new Palette(colors, settings, this.containerEl, this.pluginSettings);
@@ -67,7 +68,7 @@ export class PaletteMRC extends MarkdownRenderChild {
             this.editModeChanges = { colors, settings: modifiedSettings };
         })
         this.palette.emitter.on('editMode', (editMode) => {
-            if(!editMode) {
+            if (!editMode) {
                 // Set palette input to stored changes
                 this.setPaletteInput(createPaletteBlock({ colors: this.editModeChanges.colors, settings: this.editModeChanges.settings }));
             }
@@ -84,9 +85,66 @@ export class PaletteMRC extends MarkdownRenderChild {
             // Extract JSON settings from the palette
             return JSON.parse(input);
         }
-        catch(error) {
+        catch (error) {
             return Status.INVALID_SETTINGS;
         }
+    }
+
+    private parseValueFromFrontMatter(frontMatter: FrontMatterCache): string | null {
+        //change to extract keys from settings
+        //TODO: Output Aliases from the frontmater (PaletteSettings)
+        if (frontMatter!["Color"]) {
+            return frontMatter!["Color"];
+        }
+        if (frontMatter!["color"]) {
+            return frontMatter!["color"];
+        }
+        if (frontMatter!["CSS Color"]) {
+            return frontMatter!["CSS Color"];
+        }
+        if (frontMatter!["RGB"]) {
+            return "rgb(" + frontMatter!["RGB"] + ")";
+        }
+        if (frontMatter!["Red"] & frontMatter!["Green"] & frontMatter!["Blue"]) {
+            return "rgb(" + frontMatter!["Red"] + " " + frontMatter!["Green"] + " " + frontMatter!["Blue"] + ")";
+        }
+        return null;
+    }
+
+    private parseNameFromFrontMatter(frontMatter: FrontMatterCache): string | null {
+        if (frontMatter!["name"]) {
+            return frontMatter!["name"];
+        }
+        return null;
+    }
+
+
+    private extractColors(colors: string[], settings: PaletteSettings): string[] | Status {
+        const vault = this.plugin.app.vault;
+        for (var i = 0; i < colors.length; i++) {
+
+            if (colors[i].match(urlRegex)) {
+                const parsedColors = parseUrl(colors[i]);
+                colors.splice(i, 1, ...parsedColors);
+                // if(parsedColors.length>1)
+                // settings.aliases.splice(i+1, 0, ...Array(parsedColors.length-1).fill(""));
+                // //TODO: Expand the Allias array by the same amount (PaletteSettings)
+            }
+
+            if (this.wikiLinkRegex.test(colors[i])) {
+                var linkPath = getLinkpath(colors[i]);
+                linkPath = linkPath.substring(2, linkPath.length - 2);
+                const tFile = this.plugin.app.metadataCache.getFirstLinkpathDest(linkPath.replace("[]", ""), this.context.sourcePath);
+                if (tFile) {
+                    const frontmatter = this.plugin.app.metadataCache.getFileCache(tFile!)?.frontmatter
+                    if (frontmatter) {
+                        colors[i] = this.parseValueFromFrontMatter(frontmatter)!;
+                        settings.aliases[i] = this.parseNameFromFrontMatter(frontmatter)!;
+                    }
+                }
+            }
+        }
+        return colors;
     }
 
     /**
@@ -94,31 +152,27 @@ export class PaletteMRC extends MarkdownRenderChild {
      * @param input colors from codeblock
      * @returns Array of colors or Status if colors are not valid
      */
-    private parseColors(input: string[], override: boolean): string[] | Status {        
+    private parseColors(input: string[], settings: PaletteSettings): string[] | Status {
         let colors = input.flatMap((color) => {
             // Split RGB / HSL delimited by semicolons
-            if(color.includes('(')){
+            if (color.includes('(')) {
                 return color.split(';').flatMap((postSplitColor) => postSplitColor.trim())
-                // Remove whitespace elements from array
-                .filter((color) => color !== '');
+                    // Remove whitespace elements from array
+                    .filter((color) => color !== '');
             }
             // Split colors delimited by commas
             return color.split(',').flatMap((postSplitColor) => {
                 return postSplitColor.trim();
             })
-        // Remove semicolons
+            // Remove semicolons
         }).flatMap((color) => color.trim().replace(';', ''));
 
-        // Combine colors array into string
-        const rawColors = colors.join('');
-
-        // If URL parse and return
-        if(rawColors.match(urlRegex)) return parseUrl(rawColors);
+        this.extractColors(colors, settings);
 
         // Return status if colors are invalid
-        if (!override) {
-            for(let color of colors) {
-                if(!validateColor(color)) return Status.INVALID_COLORS;
+        if (!settings.override) {
+            for (let color of colors) {
+                if (!validateColor(color)) return Status.INVALID_COLORS;
             }
         }
 
@@ -141,7 +195,7 @@ export class PaletteMRC extends MarkdownRenderChild {
         // Get PaletteSettings if valid or plugin defaults if invalid
         let settingsObj = typeof settings === 'object' ? settings : pluginToPaletteSettings(this.pluginSettings);
 
-        return { colors: this.parseColors(split, settingsObj.override), settings: settings };
+        return { colors: this.parseColors(split, settingsObj), settings: settingsObj };
     }
 
     /**
@@ -151,14 +205,14 @@ export class PaletteMRC extends MarkdownRenderChild {
         let editor = this.plugin.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
         // Palette line start & line end
         const paletteSection = this.context.getSectionInfo(this.palette.containerEl);
-        if(paletteSection && editor) return {
+        if (paletteSection && editor) return {
             lines: {
-                lineStart: paletteSection.lineStart, 
+                lineStart: paletteSection.lineStart,
                 lineEnd: paletteSection.lineEnd
-            }, 
+            },
             input: editor.getRange(
-                {line: paletteSection.lineStart, ch: 0}, 
-                {line: paletteSection.lineEnd + 1, ch: 0}
+                { line: paletteSection.lineStart, ch: 0 },
+                { line: paletteSection.lineEnd + 1, ch: 0 }
             )
         }
         else {
@@ -173,10 +227,10 @@ export class PaletteMRC extends MarkdownRenderChild {
         let editor = this.plugin.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
         // Palette line start & line end
         const paletteSection = this.context.getSectionInfo(this.palette.containerEl);
-        if(paletteSection && editor) {
-            editor.replaceRange(replacement, {line: paletteSection.lineStart, ch: 0}, {line: paletteSection.lineEnd + 1, ch: 0});
+        if (paletteSection && editor) {
+            editor.replaceRange(replacement, { line: paletteSection.lineStart, ch: 0 }, { line: paletteSection.lineEnd + 1, ch: 0 });
             return {
-                lineStart: paletteSection.lineStart, 
+                lineStart: paletteSection.lineStart,
                 lineEnd: paletteSection.lineEnd
             };
         }

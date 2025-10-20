@@ -23,6 +23,7 @@ export default class ColorPalette extends Plugin {
 		this.registerMarkdownCodeBlockProcessor(
 			'palette',
 			async (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+				console.log(this);
 				ctx.addChild(new PaletteMRC(this, el, source.trim(), ctx));
 			}
 		)
