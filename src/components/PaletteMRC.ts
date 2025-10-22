@@ -90,55 +90,53 @@ export class PaletteMRC extends MarkdownRenderChild {
         }
     }
 
-    private parseValueFromFrontMatter(frontMatter: FrontMatterCache): string | null {
-        //change to extract keys from settings
-        //TODO: Output Aliases from the frontmater (PaletteSettings)
-        if (frontMatter!["Color"]) {
-            return frontMatter!["Color"];
-        }
-        if (frontMatter!["color"]) {
-            return frontMatter!["color"];
-        }
-        if (frontMatter!["CSS Color"]) {
-            return frontMatter!["CSS Color"];
-        }
-        if (frontMatter!["RGB"]) {
-            return "rgb(" + frontMatter!["RGB"] + ")";
-        }
-        if (frontMatter!["Red"] & frontMatter!["Green"] & frontMatter!["Blue"]) {
-            return "rgb(" + frontMatter!["Red"] + " " + frontMatter!["Green"] + " " + frontMatter!["Blue"] + ")";
+    /**
+     * Extracts the color value from the frontmatter
+     * @param frontMatter from the linked file
+     * @returns string from the property or null if it does not exist
+     */
+    private parseColorFromFrontMatter(frontMatter: FrontMatterCache): string | null {
+        if (frontMatter![this.pluginSettings.propertyKeyColor]) {
+            return frontMatter[this.pluginSettings.propertyKeyColor];
         }
         return null;
     }
 
+    /**
+ * Extracts the alias override value from the frontmatter
+ * @param frontMatter from the linked file
+ * @returns string from the property or null if it does not exist
+ */
     private parseNameFromFrontMatter(frontMatter: FrontMatterCache): string | null {
-        if (frontMatter!["name"]) {
-            return frontMatter!["name"];
-        }
+        return frontMatter[this.pluginSettings.propertyKeyAlias] ?? null;
         return null;
     }
 
-
+    /**
+     * Converts all indiret references (internal links & URLs) into direct colors.
+     * @param colors input color array strings
+     * @param settings 
+     * @returns string[] of direct colors or status error
+     */
     private extractColors(colors: string[], settings: PaletteSettings): string[] | Status {
-        const vault = this.plugin.app.vault;
-        for (var i = 0; i < colors.length; i++) {
+        //const vault = this.plugin.app.vault;
+        for (let i = 0; i < colors.length; i++) {
 
+            // Convert URLs to colors
             if (colors[i].match(urlRegex)) {
                 const parsedColors = parseUrl(colors[i]);
                 colors.splice(i, 1, ...parsedColors);
-                // if(parsedColors.length>1)
-                // settings.aliases.splice(i+1, 0, ...Array(parsedColors.length-1).fill(""));
-                // //TODO: Expand the Allias array by the same amount (PaletteSettings)
             }
 
+            // Convert internal links to colors
             if (this.wikiLinkRegex.test(colors[i])) {
-                var linkPath = getLinkpath(colors[i]);
+                let linkPath = getLinkpath(colors[i]);
                 linkPath = linkPath.substring(2, linkPath.length - 2);
                 const tFile = this.plugin.app.metadataCache.getFirstLinkpathDest(linkPath.replace("[]", ""), this.context.sourcePath);
                 if (tFile) {
                     const frontmatter = this.plugin.app.metadataCache.getFileCache(tFile!)?.frontmatter
                     if (frontmatter) {
-                        colors[i] = this.parseValueFromFrontMatter(frontmatter)!;
+                        colors[i] = this.parseColorFromFrontMatter(frontmatter)!;
                         settings.aliases[i] = this.parseNameFromFrontMatter(frontmatter)!;
                     }
                 }
