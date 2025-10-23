@@ -1,4 +1,4 @@
-import { FrontMatterCache, getFrontMatterInfo, getLinkpath, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownView, Notice, parseFrontMatterAliases, parseFrontMatterEntry, parseFrontMatterStringArray, parseFrontMatterTags, parseLinktext, Vault } from "obsidian";
+import { FrontMatterCache, getLinkpath, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownView, Notice } from "obsidian";
 import ColorPalette, { urlRegex } from "main";
 import { ColorPaletteSettings } from "settings";
 import { Palette, PaletteSettings, Status } from "./Palette";
@@ -109,7 +109,6 @@ export class PaletteMRC extends MarkdownRenderChild {
  */
     private parseNameFromFrontMatter(frontMatter: FrontMatterCache): string | null {
         return frontMatter[this.pluginSettings.propertyKeyAlias] ?? null;
-        return null;
     }
 
     /**
@@ -140,6 +139,8 @@ export class PaletteMRC extends MarkdownRenderChild {
                         settings.aliases[i] = this.parseNameFromFrontMatter(frontmatter)!;
                     }
                 }
+                // Test with Markdown [Three laws of motion](Three%20laws%20of%20motion.md)
+                // Test with rename [[Example#Details|Section name]]
             }
         }
         return colors;
