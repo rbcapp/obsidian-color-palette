@@ -270,7 +270,7 @@ export class Palette {
 						  hideText: settings.hideText,
                     alias: settings.aliases?.[i] || '',
                     colorCount: colors.length,
-                }
+                } //TODO: ensure this is forced to PaletteItemSettings format (type it)
             );
             
             paletteItem.emitter.on('click', async (e: MouseEvent) => await copyToClipboard(color.toUpperCase(), this.pluginSettings.copyFormat));

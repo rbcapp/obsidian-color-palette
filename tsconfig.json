@@ -22,5 +22,5 @@
   },
   "include": [
     "**/*.ts"
-  ]
+, "test/components/PaletteItem.test.ts"  ]
 }
