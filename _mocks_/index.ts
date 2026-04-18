@@ -11,7 +11,7 @@
 import { PluginSettingTab } from "./PluginSettingTab";
 // import { Setting } from './Setting';
 //import StatusBarItem from './StatusBarItem';
-import { createEl } from "./HTMLElement";
+// import { createEl } from "./HTMLElement";
 
 // TODO: remove extra mock files when complete
 
@@ -26,7 +26,7 @@ module.exports = {
   //Setting,
   //StatusBarItem,
   PluginSettingTab,
-  createEl
+ // createEl
 };
 
 // mocking these classes is not necessary. They're part of the import but only accessed as types, which should work out of the box.
