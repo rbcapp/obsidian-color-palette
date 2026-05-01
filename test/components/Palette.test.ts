@@ -175,7 +175,7 @@ describe('A Palette', () => {
 			const mockCanvas = new MockCanvasBuilder().withEmitter(emitter);
 			dropzoneDiv.addClass.mockReturnValueOnce(mockCanvas);
 
-			
+
 			// dropzoneDiv.addClass.mockImplementation((param: string) => {
 			// 	const callNumber = dropzoneDiv.addClass.mock.calls.length; // current call count
 			// 	if (callNumber === 1 && param === 'canvas') {
@@ -202,7 +202,7 @@ describe('A Palette', () => {
 			//mockCanvasConstructor.mockReturnValueOnce(mockCanvas);
 
 
-			
+
 			// CURRENT ISSUE: Test runs till it needs to create a Canvas. Then it needs to create a bunch of elements
 			//	(and the resulting mocking issues)
 
@@ -222,77 +222,101 @@ describe('A Palette', () => {
 	});
 
 	describe('with invalid colors (as string)', () => {
-		// it('should set colors to empty array', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
+		beforeEach(() => {
+			//Setup
+			const mockInvalidSection = createMockHTMLElement();
+			const mockInvalidSpan = createMockHTMLElement();
+			dropzoneDiv.createEl.mockReturnValueOnce(mockInvalidSection);
+			mockInvalidSection.createEl.mockReturnValueOnce(mockInvalidSpan);
+		});
 
-		// 	// Assert
-		// 	expect(palette.colors).toEqual([]);
-		// });
+		afterEach(() => {
+			jest.clearAllMocks();
+		});
 
-		// it('should set status to INVALID_COLORS when only colors are invalid', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
+		it('should set colors to empty array', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.status).toBe(Status.INVALID_COLORS);
-		// });
+			// Assert
+			expect(palette.colors).toEqual([]);
+		});
 
-		// it('should set status to INVALID_COLORS_AND_SETTINGS when both colors and settings are invalid', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		it('should set status to INVALID_COLORS when only colors are invalid', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.status).toBe(Status.INVALID_COLORS_AND_SETTINGS);
-		// });
+			// Assert
+			expect(palette.status).toBe(Status.INVALID_COLORS);
+		});
 
-		// it('should use fallback settings from pluginSettings', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
+		it('should set status to INVALID_COLORS_AND_SETTINGS when both colors and settings are invalid', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
 
-		// 	// Assert - Settings should come from palette settings override with plugin fallback
-		// 	expect(palette.settings).toBeDefined();
-		// 	expect(palette.settings.height).toBe(paletteSettings.height);
-		// 	expect(palette.settings.width).toBe(paletteSettings.width);
-		// });
+			// Assert
+			expect(palette.status).toBe(Status.INVALID_COLORS_AND_SETTINGS);
+		});
+
+		it('should use fallback settings from pluginSettings', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
+
+			// Assert - Settings should come from palette settings override with plugin fallback
+			expect(palette.settings).toBeDefined();
+			expect(palette.settings.height).toBe(paletteSettings.height);
+			expect(palette.settings.width).toBe(paletteSettings.width);
+		});
 	});
 
 	describe('with invalid settings (as string)', () => {
-		// it('should fall back to pluginSettings converted to PaletteSettings', () => {
-		// 	// Execute
-		// 	const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		beforeEach(() => {
+			//Setup
+			const mockInvalidSection = createMockHTMLElement();
+			const mockInvalidSpan = createMockHTMLElement();
+			dropzoneDiv.createEl.mockReturnValueOnce(mockInvalidSection);
+			mockInvalidSection.createEl.mockReturnValueOnce(mockInvalidSpan);
+		});
 
-		// 	// Assert
-		// 	expect(palette.settings).toBeDefined();
-		// 	expect(palette.settings.height).toBe(pluginSettings.height);
-		// 	expect(palette.settings.width).toBe(pluginSettings.width);
-		// 	expect(palette.settings.direction).toBe(pluginSettings.direction);
-		// });
+		afterEach(() => {
+			jest.clearAllMocks();
+		});
 
-		// it('should set status to INVALID_SETTINGS', () => {
-		// 	// Execute
-		// 	const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		it('should fall back to pluginSettings converted to PaletteSettings', () => {
+			// Execute
+			const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.status).toBe(Status.INVALID_SETTINGS);
-		// });
+			// Assert
+			expect(palette.settings).toBeDefined();
+			expect(palette.settings.height).toBe(pluginSettings.height);
+			expect(palette.settings.width).toBe(pluginSettings.width);
+			expect(palette.settings.direction).toBe(pluginSettings.direction);
+		});
 
-		// it('should not override colors with invalid settings', () => {
-		// 	// Execute
-		// 	const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		it('should set status to INVALID_SETTINGS', () => {
+			// Execute
+			const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.colors).toEqual(testColors);
-		// });
+			// Assert
+			expect(palette.status).toBe(Status.INVALID_SETTINGS);
+		});
 
-		// it('should have colors but invalid settings status', () => {
-		// 	// Execute
-		// 	const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		it('should not override colors with invalid settings', () => {
+			// Execute
+			const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.colors.length).toBeGreaterThan(0);
-		// 	expect(palette.status).toBe(Status.INVALID_SETTINGS);
-		// });
+			// Assert
+			expect(palette.colors).toEqual(testColors);
+		});
+
+		it('should have colors but invalid settings status', () => {
+			// Execute
+			const palette = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+
+			// Assert
+			expect(palette.colors.length).toBeGreaterThan(0);
+			expect(palette.status).toBe(Status.INVALID_SETTINGS);
+		});
 	});
 
 	describe('with undefined settings', () => {
@@ -335,30 +359,42 @@ describe('A Palette', () => {
 	});
 
 	describe('with both colors and settings invalid', () => {
-		// it('should set colors to empty array', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		beforeEach(() => {
+			//Setup
+			const mockInvalidSection = createMockHTMLElement();
+			const mockInvalidSpan = createMockHTMLElement();
+			dropzoneDiv.createEl.mockReturnValueOnce(mockInvalidSection);
+			mockInvalidSection.createEl.mockReturnValueOnce(mockInvalidSpan);
+		});
 
-		// 	// Assert
-		// 	expect(palette.colors).toEqual([]);
-		// });
+		afterEach(() => {
+			jest.clearAllMocks();
+		});
 
-		// it('should fall back to pluginSettings for settings', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		it('should set colors to empty array', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.settings.height).toBe(pluginSettings.height);
-		// 	expect(palette.settings.width).toBe(pluginSettings.width);
-		// });
+			// Assert
+			expect(palette.colors).toEqual([]);
+		});
 
-		// it('should set status to INVALID_COLORS_AND_SETTINGS', () => {
-		// 	// Execute
-		// 	const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+		it('should fall back to pluginSettings for settings', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.status).toBe(Status.INVALID_COLORS_AND_SETTINGS);
-		// });
+			// Assert
+			expect(palette.settings.height).toBe(pluginSettings.height);
+			expect(palette.settings.width).toBe(pluginSettings.width);
+		});
+
+		it('should set status to INVALID_COLORS_AND_SETTINGS', () => {
+			// Execute
+			const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
+
+			// Assert
+			expect(palette.status).toBe(Status.INVALID_COLORS_AND_SETTINGS);
+		});
 
 		// it('should be recoverable from invalid state when settings object is passed', () => {
 		// 	// Setup
@@ -442,32 +478,32 @@ describe('A Palette', () => {
 	});
 
 	describe('settings merging behavior', () => {
-		// it('should preserve all palette settings properties when merging', () => {
-		// 	// Setup
-		// 	const customSettings: PaletteSettings = {
-		// 		height: 100,
-		// 		width: 150,
-		// 		direction: Direction.Row,
-		// 		gradient: true,
-		// 		hover: true,
-		// 		hideText: false,
-		// 		override: true,
-		// 		aliases: ['primary', 'secondary']
-		// 	};
+		it('should preserve all palette settings properties when merging', () => {
+			// Setup
+			const customSettings: PaletteSettings = {
+				height: 100,
+				width: 150,
+				direction: Direction.Row,
+				gradient: true,
+				hover: true,
+				hideText: false,
+				override: true,
+				aliases: ['primary', 'secondary']
+			};
 
-		// 	// Execute
-		// 	const palette = new Palette(testColors, customSettings, containerDiv, pluginSettings);
+			// Execute
+			const palette = new Palette(testColors, customSettings, containerDiv, pluginSettings);
 
-		// 	// Assert - All properties should be preserved
-		// 	expect(Object.keys(palette.settings)).toContain('height');
-		// 	expect(Object.keys(palette.settings)).toContain('width');
-		// 	expect(Object.keys(palette.settings)).toContain('direction');
-		// 	expect(Object.keys(palette.settings)).toContain('gradient');
-		// 	expect(Object.keys(palette.settings)).toContain('hover');
-		// 	expect(Object.keys(palette.settings)).toContain('hideText');
-		// 	expect(Object.keys(palette.settings)).toContain('override');
-		// 	expect(Object.keys(palette.settings)).toContain('aliases');
-		// });
+			// Assert - All properties should be preserved
+			expect(Object.keys(palette.settings)).toContain('height');
+			expect(Object.keys(palette.settings)).toContain('width');
+			expect(Object.keys(palette.settings)).toContain('direction');
+			expect(Object.keys(palette.settings)).toContain('gradient');
+			expect(Object.keys(palette.settings)).toContain('hover');
+			expect(Object.keys(palette.settings)).toContain('hideText');
+			expect(Object.keys(palette.settings)).toContain('override');
+			expect(Object.keys(palette.settings)).toContain('aliases');
+		});
 
 		it('should handle partial palette settings overrides', () => {
 			// Setup
@@ -558,17 +594,17 @@ describe('A Palette', () => {
 		// 	expect(palette.colors).toEqual(testColors);
 		// });
 
-		// it('should handle very large color arrays', () => {
-		// 	// Setup
-		// 	const largeColorArray = Array(1000).fill('#FF0000').map((color, i) => `hsl(${i}, 100%, 50%)`);
+		it('should handle very large color arrays', () => {
+			// Setup
+			const largeColorArray = Array(1000).fill('#FF0000').map((color, i) => `hsl(${i}, 100%, 50%)`);
 
-		// 	// Execute
-		// 	const palette = new Palette(largeColorArray, paletteSettings, containerDiv, pluginSettings);
+			// Execute
+			const palette = new Palette(largeColorArray, paletteSettings, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(palette.colors).toEqual(largeColorArray);
-		// 	expect(palette.colors.length).toBe(1000);
-		// });
+			// Assert
+			expect(palette.colors).toEqual(largeColorArray);
+			expect(palette.colors.length).toBe(1000);
+		});
 
 		it('should handle empty aliases array in settings', () => {
 			// Setup
@@ -615,18 +651,20 @@ describe('A Palette', () => {
 	});
 
 	describe('type validation', () => {
-		// it('should distinguish between object and string Status', () => {
-		// 	// Execute 1 - With string status (invalid colors)
-		// 	const paletteInvalidColors = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
+		it('should distinguish between object and string Status', () => {
+			// Execute 1 - With string status (invalid colors)
+			let paletteInvalidColors: Palette;
+			
+			paletteInvalidColors = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
 
-		// 	// Execute 2 - With object colors
-		// 	const paletteValidColors = new Palette(testColors, paletteSettings, containerDiv, pluginSettings);
+			// Execute 2 - With object colors
+			const paletteValidColors = new Palette(testColors, paletteSettings, containerDiv, pluginSettings);
 
-		// 	// Assert
-		// 	expect(typeof paletteInvalidColors.colors).toBe('object');
-		// 	expect(Array.isArray(paletteInvalidColors.colors)).toBe(true);
-		// 	expect(paletteValidColors.colors).toEqual(testColors);
-		// });
+			// Assert
+			expect(typeof paletteInvalidColors.colors).toBe('object');
+			expect(Array.isArray(paletteInvalidColors.colors)).toBe(true);
+			expect(paletteValidColors.colors).toEqual(testColors);
+		});
 
 		// it('should correctly type check settings as object vs string', () => {
 		// 	// Execute 1 - With string status (invalid settings)
@@ -641,58 +679,4 @@ describe('A Palette', () => {
 		// 	expect(paletteValidSettings.settings).toEqual(expect.objectContaining(paletteSettings));
 		// });
 	});
-
-
-	// ---
-
-
-	// describe('Palette', () => {
-	// 	// Mock Plugin to avoid errors during instantiation
-	// 	const mockPlugin = {
-	// 		addCommand: jest.fn(),
-	// 		addStatusBarItem: jest.fn(),
-	// 		addIcon: jest.fn(),
-	// 		getIcon: jest.fn(),
-	// 		loadLayout: jest.fn(),
-	// 		saveLayout: jest.fn(),
-	// 		onLayoutChange: jest.fn(),
-	// 		trigger: jest.fn(),
-	// 		triggerRefetch: jest.fn()
-	// 	} as unknown as Plugin;
-
-	// 	const defaultSettings: PaletteSettings = {
-	// 		height: 50,
-	// 		direction: Direction.Column,
-	// 		width: 150,
-	// 		gradient: false,
-	// 		hover: false,
-	// 		hideText: false,
-	// 		override: false,
-	// 		aliases: []
-	// 	};
-
-	// 	const mockHTMLElement = createMockHTMLElement();
-
-	// 	it('should set the width and update the CSS variable on the dropzone', () => {
-	// 		//Setup
-	// 		const dropzone = document.createElement('div');
-	// 		const colors = ['#FFFFFF', '#000000'];
-
-	// 		const mockDropzone = createMockHTMLElement();
-	// 		mockHTMLElement.createEl.mockReturnValueOnce(mockDropzone);
-
-	// 		// Execute
-	// 		const palette = new Palette(colors, defaultSettings, mockHTMLElement, mockPlugin);
-
-	// 		// Initialize the palette (this sets up the dropzone reference)
-	// 		//palette.create(dropzone, colors, settings, mockPlugin);
-
-	// 		// Act
-	// 		const newWidth = 300;
-	// 		palette.setWidth(newWidth);
-
-	// 		// Assert
-	// 		expect(dropzone.style.getPropertyValue('--palette-width')).toBe(`${newWidth}px`);
-	// 	});
-	// });
 });

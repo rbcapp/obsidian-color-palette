@@ -205,7 +205,9 @@ export class Palette {
      * @param message Message to display
      */
     public createNotice(message: string) {
-        this.showNotice && new Notice(message, this.pluginSettings.noticeDuration);
+        if (this.showNotice && typeof Notice === 'function') {
+    new Notice(message, this.pluginSettings.noticeDuration);
+}
     }
 
     public setEditMode(editMode: boolean) {
@@ -244,9 +246,17 @@ export class Palette {
             // Set width of palettes
             this.setWidth(this.getPaletteWidth());
         }
-        catch (err) {
-            if (err instanceof PaletteError) this.createInvalidPalette(err.status, err.message);
-            else this.createNotice(err);
+        catch (e) {
+            let message: string = 'An unknown error occurred';
+            if (e instanceof Error) {
+                // Use e.message for a specific error description
+                message = e.message; 
+                if (e instanceof PaletteError) this.createInvalidPalette(e.status, e.message);
+                else this.createNotice(e.message); // Pass the message string directly
+            } else {
+                 // Fallback for non-Error objects caught
+                 this.createNotice('An unknown error occurred during palette creation.');
+            }
         }
     }
 
@@ -285,7 +295,7 @@ export class Palette {
                 this.reload();
             })
 
-            paletteItem.emitter.on('alias', (alias) => {
+            paletteItem.emitter.on('alias', (alias: string) => {
                 // Get the index of the alias relative to the PaletteItem color
                 const aliasIndex = this.colors.findIndex(val => val === color);
                 for (let i = 0; i < aliasIndex; i++) {
@@ -349,7 +359,7 @@ class PaletteError extends Error {
     status: Status;
     message: string;
 
-    constructor(status: Status, message = '') {
+    constructor(status: Status, message: string = '') {
         super(message);
         this.status = status;
     }
