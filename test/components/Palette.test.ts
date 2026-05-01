@@ -1,11 +1,10 @@
 
-import { AliasMode, ColorPaletteSettings, CopyFormat, Direction } from "settings";
+import { AliasMode, ColorPaletteSettings, CopyFormat, Direction } from "../../src/settings";
 import { Palette, PaletteSettings, Status } from "../../src/components/Palette";
 import { createMockHTMLElement } from "../../_mocks_/mockHTMLElement";
 import { createMockPaletteItem } from "../../_mocks_/mockPaletteItem";
-import { PaletteItem } from "components/PaletteItem";
-import { Canvas, EventMap } from "utils/canvasUtils";
-import { createMockCanvas, MockCanvasBuilder, CanvasEventMap } from "../../_mocks_/utils/mockCanvasUtils";
+import { PaletteItem } from "../../src/components/PaletteItem";
+import { MockCanvasBuilder, CanvasEventMap } from "../../_mocks_/utils/mockCanvasUtils";
 import { EventEmitter } from "stream";
 
 jest.mock("components/PaletteItem");
