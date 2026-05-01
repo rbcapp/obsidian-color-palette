@@ -1,8 +1,8 @@
-import { Canvas } from 'utils/canvasUtils';
-import { EventEmitter } from "utils/EventEmitter";
-import { Direction } from 'settings';
+import { Canvas } from '../../src/utils/canvasUtils';
+import { EventEmitter } from "../../src/utils/EventEmitter";
+import { Direction } from '../../src/settings';
 
-type CanvasEventMap = {
+export type CanvasEventMap = {
   click: [hex: string],
 }
 
