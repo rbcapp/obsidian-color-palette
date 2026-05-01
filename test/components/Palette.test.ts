@@ -10,18 +10,6 @@ import { EventEmitter } from "stream";
 
 jest.mock("components/PaletteItem");
 jest.mock("utils/canvasUtils");
-//jest.mock("utils/canvasUtils");
-
-// describe('A Palette', () => {
-//   const HTMLElementMock = mock<HTMLElement>();
-//   const ColorPaletteSettingsMock = mock<ColorPaletteSettings>();
-
-//   describe('can be constructed', () => {
-//     it('should be able to execute test', () => {
-//       expect(Palette).toBeTruthy();
-//     });
-//   });
-// });
 
 describe('A Palette', () => {
 	let containerDiv: ReturnType<typeof createMockHTMLElement>;
@@ -395,18 +383,6 @@ describe('A Palette', () => {
 			// Assert
 			expect(palette.status).toBe(Status.INVALID_COLORS_AND_SETTINGS);
 		});
-
-		// it('should be recoverable from invalid state when settings object is passed', () => {
-		// 	// Setup
-		// 	const invalidPalette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
-
-		// 	// Execute - Call setDefaults again with valid data
-		// 	invalidPalette.setDefaults(testColors, paletteSettings);
-
-		// 	// Assert
-		// 	expect(invalidPalette.colors).toEqual(testColors);
-		// 	expect(invalidPalette.status).toBe(Status.VALID);
-		// });
 	});
 
 	describe('with various color formats', () => {
@@ -581,19 +557,6 @@ describe('A Palette', () => {
 			expect(palette.colors).toEqual([]);
 		});
 
-		// it('should handle switching from invalid to valid state', () => {
-		// 	// Setup
-		// 	const palette = new Palette(Status.INVALID_COLORS, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
-		// 	expect(palette.status).toBe(Status.INVALID_COLORS_AND_SETTINGS);
-
-		// 	// Execute - Switch to valid state
-		// 	palette.setDefaults(testColors, paletteSettings);
-
-		// 	// Assert
-		// 	expect(palette.status).toBe(Status.VALID);
-		// 	expect(palette.colors).toEqual(testColors);
-		// });
-
 		it('should handle very large color arrays', () => {
 			// Setup
 			const largeColorArray = Array(1000).fill('#FF0000').map((color, i) => `hsl(${i}, 100%, 50%)`);
@@ -648,35 +611,5 @@ describe('A Palette', () => {
 			// Assert
 			expect(palette.settings.aliases.length).toBe(4);
 		});
-	});
-
-	describe('type validation', () => {
-		it('should distinguish between object and string Status', () => {
-			// Execute 1 - With string status (invalid colors)
-			let paletteInvalidColors: Palette;
-			
-			paletteInvalidColors = new Palette(Status.INVALID_COLORS, paletteSettings, containerDiv, pluginSettings);
-
-			// Execute 2 - With object colors
-			const paletteValidColors = new Palette(testColors, paletteSettings, containerDiv, pluginSettings);
-
-			// Assert
-			expect(typeof paletteInvalidColors.colors).toBe('object');
-			expect(Array.isArray(paletteInvalidColors.colors)).toBe(true);
-			expect(paletteValidColors.colors).toEqual(testColors);
-		});
-
-		// it('should correctly type check settings as object vs string', () => {
-		// 	// Execute 1 - With string status (invalid settings)
-		// 	const paletteInvalidSettings = new Palette(testColors, Status.INVALID_SETTINGS, containerDiv, pluginSettings);
-
-		// 	// Execute 2 - With object settings
-		// 	const paletteValidSettings = new Palette(testColors, paletteSettings, containerDiv, pluginSettings);
-
-		// 	// Assert
-		// 	expect(typeof paletteInvalidSettings.settings).toBe('object');
-		// 	expect(typeof paletteValidSettings.settings).toBe('object');
-		// 	expect(paletteValidSettings.settings).toEqual(expect.objectContaining(paletteSettings));
-		// });
 	});
 });
