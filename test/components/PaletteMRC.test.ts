@@ -1,8 +1,9 @@
 import { jest } from '@jest/globals';
 import { createMockMarkdownPostProcessorContext } from '_mocks_/mockMarkdownPostProcessorContext';
 import { PaletteMRC } from 'src/components/PaletteMRC';
+import ColorPalette from 'src/main';
 import { ColorPaletteSettings, defaultSettings } from 'src/settings';
-import { Status } from 'src/components/Palette';
+import { PaletteSettings, Status } from 'src/components/Palette';
 import { setupMockPaletteConstructor, getMockPaletteConstructor } from '_mocks_/mockPaletteConstructor';
 import { EventEmitter } from 'src/utils/EventEmitter';
 import { createMockPalette } from '_mocks_/mockPalette';
@@ -81,7 +82,23 @@ function createPalettesArray() {
   return palettes;
 }
 
-function createMockPlugin(overrides: Record<string, unknown> = {}) {
+type MockPlugin = {
+  settings: ColorPaletteSettings;
+  app: {
+    workspace: {
+      getActiveViewOfType: jest.Mock<
+        () => null | { editor: { getRange?: jest.Mock; replaceRange?: jest.Mock } }
+      >;
+    };
+    metadataCache: {
+      getFirstLinkpathDest: jest.Mock;
+      getFileCache: jest.Mock;
+    };
+  };
+  palettes: ReturnType<typeof createPalettesArray>;
+};
+
+function createMockPlugin(overrides: Partial<MockPlugin> = {}): MockPlugin {
   return {
     settings: { ...defaultSettings },
     app: {
@@ -95,7 +112,7 @@ function createMockPlugin(overrides: Record<string, unknown> = {}) {
           }
           return null;
         }),
-        getFileCache: jest.fn((tFile: any) => {
+        getFileCache: jest.fn((tFile: unknown) => {
           if (tFile) {
             return {
               frontmatter: {
@@ -113,14 +130,23 @@ function createMockPlugin(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function createPaletteMRC(
+  plugin: MockPlugin,
+  containerEl: HTMLElement,
+  input: string,
+  context: ReturnType<typeof createMockMarkdownPostProcessorContext>
+) {
+  return new PaletteMRC(plugin as unknown as ColorPalette, containerEl, input, context);
+}
+
 function setupPaletteConstructorWithEmitter() {
   setupMockPaletteConstructor();
   const mockPaletteConstructor = getMockPaletteConstructor();
   mockPaletteConstructor.mockImplementation((colors, _settings, containerEl, _pluginSettings) => {
-    const emitter = new EventEmitter<{ changed: [string[], unknown]; editMode: [boolean] }>();
+    const emitter = new EventEmitter<{ changed: [string[], PaletteSettings]; editMode: [boolean] }>();
     return createMockPalette({
       colors: Array.isArray(colors) ? colors : [],
-      containerEl,
+      containerEl: containerEl as HTMLElement,
       status: Status.VALID,
       emitter,
       setEditMode: jest.fn(),
@@ -130,7 +156,7 @@ function setupPaletteConstructorWithEmitter() {
 }
 
 describe('PaletteMRC', () => {
-  let mockPlugin: ReturnType<typeof createMockPlugin>;
+  let mockPlugin: MockPlugin;
   let mockContainerEl: HTMLElement;
   let mockInput: string;
   let mockContext: ReturnType<typeof createMockMarkdownPostProcessorContext>;
@@ -147,7 +173,7 @@ describe('PaletteMRC', () => {
 
   describe('PaletteMRC Constructor & Properties', () => {
     it('should instantiate correctly with provided arguments', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
 
       expect(paletteMrc.plugin).toBe(mockPlugin);
       expect(paletteMrc.input).toBe(mockInput);
@@ -156,26 +182,26 @@ describe('PaletteMRC', () => {
     });
 
     it('should set containerEl to the provided element', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
 
       expect(paletteMrc.containerEl).toBe(mockContainerEl);
     });
 
     it('should set pluginSettings from plugin.settings', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
 
       expect(paletteMrc.pluginSettings).toBe(mockPlugin.settings);
     });
 
     it('should initialize with correct wikiLinkTestRegex pattern', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
 
       expect(paletteMrc.wikiLinkTestRegex).toBeDefined();
       expect(paletteMrc.wikiLinkTestRegex.test('[[test]]')).toBe(true);
     });
 
     it('should create palette after onload', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
 
       expect(paletteMrc.palette).toBeUndefined();
 
@@ -188,7 +214,7 @@ describe('PaletteMRC', () => {
 
   describe('Direct color input', () => {
     it('passes multiline hex colors to Palette without metadata lookup', () => {
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         '#ff0000\n#00ff00\n#0000ff',
@@ -204,7 +230,7 @@ describe('PaletteMRC', () => {
     });
 
     it('splits comma-delimited colors on one line', () => {
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         '#ff0000, #00ff00, #0000ff',
@@ -216,7 +242,7 @@ describe('PaletteMRC', () => {
     });
 
     it('splits semicolon-delimited rgb colors', () => {
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         'rgb(255, 0, 0); rgb(0, 255, 0)',
@@ -230,7 +256,7 @@ describe('PaletteMRC', () => {
 
   describe('parseSettings', () => {
     it('parses JSON settings from the last input line', () => {
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         '#ff0000\n{"height": 200, "width": 400}',
@@ -238,12 +264,12 @@ describe('PaletteMRC', () => {
       );
       paletteMrc.update();
 
-      const settings = getMockPaletteConstructor().mock.calls[0][1];
+      const settings = getMockPaletteConstructor().mock.calls[0][1] as Partial<PaletteSettings>;
       expect(settings).toEqual(expect.objectContaining({ height: 200, width: 400 }));
     });
 
     it('falls back to plugin defaults when settings JSON is malformed', () => {
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         '#ff0000\n{not valid json',
@@ -251,7 +277,7 @@ describe('PaletteMRC', () => {
       );
       paletteMrc.update();
 
-      const settings = getMockPaletteConstructor().mock.calls[0][1];
+      const settings = getMockPaletteConstructor().mock.calls[0][1] as Partial<PaletteSettings>;
       expect(settings.height).toBe(defaultSettings.height);
       expect(settings.width).toBe(defaultSettings.width);
     });
@@ -261,7 +287,7 @@ describe('PaletteMRC', () => {
     it('returns INVALID_COLORS when validation fails and override is false', () => {
       jest.mocked(validateColor).mockImplementation((color) => color !== 'not-a-color');
 
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         'not-a-color',
@@ -275,7 +301,7 @@ describe('PaletteMRC', () => {
     it('allows invalid colors when override is true in settings', () => {
       jest.mocked(validateColor).mockReturnValue(false);
 
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         'not-a-color\n{"override": true}',
@@ -289,7 +315,7 @@ describe('PaletteMRC', () => {
 
   describe('URL color extraction', () => {
     it('calls parseUrl for URL-like color entries', () => {
-      const paletteMrc = new PaletteMRC(
+      const paletteMrc = createPaletteMRC(
         mockPlugin,
         mockContainerEl,
         'coolors.co/palette/test',
@@ -317,7 +343,7 @@ describe('PaletteMRC', () => {
     ];
 
     test.each(internalLinkTestCases)('$input', ({ input, valid, extractedFile }) => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, input, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, input, mockContext);
       paletteMrc.update();
 
       expect(paletteMrc.wikiLinkTestRegex.test(input)).toBe(valid);
@@ -331,7 +357,7 @@ describe('PaletteMRC', () => {
     it('handles null file resolution', () => {
       mockPlugin.app.metadataCache.getFirstLinkpathDest.mockReturnValue(null);
 
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, '[[Non-existent file]]', mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, '[[Non-existent file]]', mockContext);
       paletteMrc.update();
 
       expect(paletteMrc.palette.colors).toEqual(['[[Non-existent file]]']);
@@ -343,7 +369,7 @@ describe('PaletteMRC', () => {
         return null;
       });
 
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, '[[Some file]]', mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, '[[Some file]]', mockContext);
       paletteMrc.update();
 
       expect(paletteMrc.palette.colors).toEqual(['[[Some file]]']);
@@ -361,7 +387,7 @@ describe('PaletteMRC', () => {
         return null;
       });
 
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, '[[Some file]]', mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, '[[Some file]]', mockContext);
       paletteMrc.update();
 
       expect(paletteMrc.palette.colors).toEqual([null]);
@@ -370,7 +396,7 @@ describe('PaletteMRC', () => {
 
   describe('Lifecycle and events', () => {
     it('unloads palette and removes itself from plugin.palettes', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
       paletteMrc.onload();
 
       paletteMrc.unload();
@@ -380,10 +406,10 @@ describe('PaletteMRC', () => {
     });
 
     it('tracks editModeChanges when palette emits changed', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
       paletteMrc.update();
 
-      paletteMrc.palette.emitter.emit('changed', ['#111111'], { height: 100 });
+      paletteMrc.palette.emitter.emit('changed', ['#111111'], { height: 100 } as PaletteSettings);
 
       expect(paletteMrc.editModeChanges).toEqual({
         colors: ['#111111'],
@@ -392,7 +418,7 @@ describe('PaletteMRC', () => {
     });
 
     it('shows PaletteMenu on contextmenu when palette is valid', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
       paletteMrc.onload();
 
       const event = new MouseEvent('contextmenu', { bubbles: true });
@@ -410,7 +436,7 @@ describe('PaletteMRC', () => {
       mockPlugin.app.workspace.getActiveViewOfType.mockReturnValue({ editor: mockEditor });
       mockContext.getSectionInfo.mockReturnValue({ lineStart: 2, lineEnd: 4 });
 
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
       paletteMrc.onload();
 
       const result = paletteMrc.getPaletteInput();
@@ -432,7 +458,7 @@ describe('PaletteMRC', () => {
       mockPlugin.app.workspace.getActiveViewOfType.mockReturnValue({ editor: mockEditor });
       mockContext.getSectionInfo.mockReturnValue({ lineStart: 1, lineEnd: 3 });
 
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
       paletteMrc.onload();
 
       const result = paletteMrc.setPaletteInput('new palette block');
@@ -446,7 +472,7 @@ describe('PaletteMRC', () => {
     });
 
     it('createNotice is invoked when editor is not ready', () => {
-      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+      const paletteMrc = createPaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
       paletteMrc.onload();
       const noticeSpy = jest.spyOn(paletteMrc, 'createNotice');
 

@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { App } from 'obsidian';
+import { MenuItem } from '_mocks_/index';
 import { PaletteMenu } from 'src/components/PaletteMenu';
 import { Palette, PaletteSettings } from 'src/components/Palette';
 import { Direction } from 'src/settings';
@@ -56,8 +57,12 @@ function createMockPalette(overrides: Partial<Palette> = {}): Palette {
   } as unknown as Palette;
 }
 
+type MenuWithItems = PaletteMenu & {
+  items: Array<MenuItem | { separator: true }>;
+};
+
 function getMenuItems(menu: PaletteMenu) {
-  return menu.items.filter((item): item is Exclude<typeof item, { separator: true }> => !('separator' in item));
+  return (menu as MenuWithItems).items.filter((item): item is MenuItem => !('separator' in item));
 }
 
 function getMenuTitles(menu: PaletteMenu) {

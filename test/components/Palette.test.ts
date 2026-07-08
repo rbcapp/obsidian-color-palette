@@ -67,7 +67,9 @@ describe('A Palette', () => {
 
     containerDiv = document.createElement('div');
 
-    (PaletteItem as jest.Mock).mockImplementation(function (...args: any[]) {
+    (PaletteItem as jest.Mock).mockImplementation(function (
+      ...args: ConstructorParameters<typeof PaletteItem>
+    ) {
       const actual = jest.requireActual('src/components/PaletteItem') as typeof import('src/components/PaletteItem');
       if ((global as any).useRealPaletteItem) {
         return new actual.PaletteItem(...args);

@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { App, Editor } from 'obsidian';
+import { Editor as MockEditor } from '_mocks_/index';
 import { GenerateModal } from 'src/components/GenerateModal';
 import { defaultSettings } from 'src/settings';
 import { Combination } from 'src/utils/generateUtils';
@@ -46,7 +47,7 @@ describe('GenerateModal', () => {
     jest.clearAllMocks();
     insertContent = jest.fn();
     (EditorUtils as jest.Mock).mockImplementation(() => ({ insertContent }));
-    editor = new Editor();
+    editor = new MockEditor() as unknown as Editor;
     modal = new GenerateModal(new App(), editor, defaultSettings);
   });
 

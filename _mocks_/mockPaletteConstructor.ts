@@ -7,8 +7,8 @@ export const setupMockPaletteConstructor = (): void => {
   mockConstructor.mockImplementation((colors, settings, containerEl, pluginSettings) =>
     createMockPalette({
       colors: Array.isArray(colors) ? colors : [],
-      containerEl,
-    })
+      containerEl: containerEl as HTMLElement,
+    }) as jest.MockedObject<Palette>
   );
 
   (global as any).mockPaletteConstructor = mockConstructor;

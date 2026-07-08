@@ -1,12 +1,10 @@
 import { jest } from '@jest/globals';
+import { App, Notice, Setting } from 'obsidian';
 import {
-  App,
   DropdownComponent,
-  Notice,
-  Setting,
   TextComponent,
   ToggleComponent,
-} from 'obsidian';
+} from '_mocks_/index';
 import {
   AliasMode,
   ColorPaletteSettings,
@@ -57,21 +55,21 @@ function captureControls(): CapturedControls {
 
   jest.spyOn(Setting.prototype, 'addDropdown').mockImplementation(function (callback) {
     const component = new DropdownComponent();
-    callback(component);
+    callback(component as never);
     dropdowns.push(component);
     return this;
   });
 
   jest.spyOn(Setting.prototype, 'addToggle').mockImplementation(function (callback) {
     const component = new ToggleComponent();
-    callback(component);
+    callback(component as never);
     toggles.push(component);
     return this;
   });
 
   jest.spyOn(Setting.prototype, 'addText').mockImplementation(function (callback) {
     const component = new TextComponent(document.createElement('div'));
-    callback(component);
+    callback(component as never);
     texts.push(component);
     return this;
   });

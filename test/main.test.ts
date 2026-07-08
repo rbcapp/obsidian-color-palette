@@ -57,8 +57,16 @@ function matchesUrlRegex(value: string): boolean {
 }
 
 function createPlugin() {
-  const plugin = new ColorPalette();
-  plugin.app = new App();
+  const app = new App();
+  const plugin = new ColorPalette(app, {
+    id: 'color-palette',
+    name: 'Color Palette',
+    version: '0.0.0',
+    minAppVersion: '0.0.0',
+    author: 'test',
+    description: 'test',
+  });
+  plugin.app = app;
   return plugin;
 }
 

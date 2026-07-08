@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import colorsea from 'colorsea';
 import { App } from 'obsidian';
-import { ReorderModal } from 'src/components/ReorderModal';
+import { Reorder, ReorderModal } from 'src/components/ReorderModal';
 import { Palette, PaletteSettings } from 'src/components/Palette';
 import { Direction } from 'src/settings';
 import { getModifiedSettings } from 'src/utils/basicUtils';
@@ -52,24 +52,32 @@ describe('ReorderModal', () => {
   });
 
   describe('onChooseSuggestion', () => {
-    const reorderModes = ['Hue', 'Saturation', 'Lightness', 'Red', 'Green', 'Blue', 'Alpha'] as const;
+    const reorderModes = [
+      Reorder.Hue,
+      Reorder.Saturation,
+      Reorder.Lightness,
+      Reorder.Red,
+      Reorder.Green,
+      Reorder.Blue,
+      Reorder.Alpha,
+    ] as const;
 
-    function expectedOrder(mode: typeof reorderModes[number], colors: string[]) {
+    function expectedOrder(mode: Reorder, colors: string[]) {
       const csColors = colors.map((color) => colorsea(color));
       switch (mode) {
-        case 'Hue':
+        case Reorder.Hue:
           return csColors.sort((a, b) => a.hue() - b.hue()).map((color) => color.hex());
-        case 'Saturation':
+        case Reorder.Saturation:
           return csColors.sort((a, b) => a.saturation() - b.saturation()).map((color) => color.hex());
-        case 'Lightness':
+        case Reorder.Lightness:
           return csColors.sort((a, b) => a.lightness() - b.lightness()).map((color) => color.hex());
-        case 'Red':
+        case Reorder.Red:
           return csColors.sort((a, b) => a.red() - b.red()).map((color) => color.hex());
-        case 'Green':
+        case Reorder.Green:
           return csColors.sort((a, b) => a.green() - b.green()).map((color) => color.hex());
-        case 'Blue':
+        case Reorder.Blue:
           return csColors.sort((a, b) => a.blue() - b.blue()).map((color) => color.hex());
-        case 'Alpha':
+        case Reorder.Alpha:
           return csColors.sort((a, b) => a.alpha() - b.alpha()).map((color) => color.hex());
       }
     }
