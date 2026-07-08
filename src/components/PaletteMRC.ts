@@ -1,10 +1,10 @@
 import { MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownView, Notice } from "obsidian";
-import ColorPalette, { urlRegex } from "main";
+import ColorPalette, { urlRegex } from "src/main";
 import { ColorPaletteSettings } from "settings";
-import { Palette, PaletteSettings, Status } from "./Palette";
-import { createPaletteBlock, getModifiedSettings, parseUrl, pluginToPaletteSettings } from "utils/basicUtils";
+import { Palette, PaletteSettings, Status } from "src/components/Palette";
+import { createPaletteBlock, getModifiedSettings, parseUrl, pluginToPaletteSettings } from "src/utils/basicUtils";
 import validateColor from "validate-color";
-import { PaletteMenu } from "./PaletteMenu";
+import { PaletteMenu } from "src/components/PaletteMenu";
 
 export class PaletteMRC extends MarkdownRenderChild {
     plugin: ColorPalette;

@@ -1,7 +1,7 @@
-import ColorPalette from "main";
+import type ColorPalette from "src/main";
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
-import { PaletteSettings } from "components/Palette";
-import { pluginToPaletteSettings } from "utils/basicUtils";
+import { PaletteSettings } from "src/components/Palette";
+import { pluginToPaletteSettings } from "src/utils/basicUtils";
 
 export enum Direction {
     Row = 'row',
