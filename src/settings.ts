@@ -317,7 +317,7 @@ export class SettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			// TODO: Convert to taking in a set of color key strings
 			.setName('Property - Color')
-			.setDesc('Which property holds the color.(Case sensitive)')
+			.setDesc('Which property holds the color. (Case sensitive)')
 			.addText((text) => {
 				text
 				.setValue(settings.propertyKeyColor.toString())
