@@ -18,7 +18,25 @@ jest.mock('src/main', () => ({
       workspace: {
         getActiveViewOfType: jest.fn(() => null),
       },
-      metadataCache: {},
+      metadataCache: {
+        getFirstLinkpathDest: jest.fn((linkpath: string) => {
+          if (linkpath && linkpath.trim().length > 0) {
+            return { path: linkpath, name: linkpath };
+          }
+          return null;
+        }),
+        getFileCache: jest.fn((tFile: any) => {
+          if (tFile) {
+            return {
+              frontmatter: {
+                Color: '#ff0000',
+                Name: 'Mock Alias',
+              },
+            };
+          }
+          return null;
+        }),
+      },
     };
     palettes: any[] = [];
   },
@@ -70,7 +88,25 @@ function createMockPlugin(overrides: Record<string, unknown> = {}) {
       workspace: {
         getActiveViewOfType: jest.fn(() => null),
       },
-      metadataCache: {},
+      metadataCache: {
+        getFirstLinkpathDest: jest.fn((linkpath: string) => {
+          if (linkpath && linkpath.trim().length > 0) {
+            return { path: linkpath, name: linkpath };
+          }
+          return null;
+        }),
+        getFileCache: jest.fn((tFile: any) => {
+          if (tFile) {
+            return {
+              frontmatter: {
+                Color: '#ff0000',
+                Name: 'Mock Alias',
+              },
+            };
+          }
+          return null;
+        }),
+      },
     },
     palettes: createPalettesArray(),
     ...overrides,
@@ -131,6 +167,13 @@ describe('PaletteMRC', () => {
       expect(paletteMrc.pluginSettings).toBe(mockPlugin.settings);
     });
 
+    it('should initialize with correct wikiLinkTestRegex pattern', () => {
+      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
+
+      expect(paletteMrc.wikiLinkTestRegex).toBeDefined();
+      expect(paletteMrc.wikiLinkTestRegex.test('[[test]]')).toBe(true);
+    });
+
     it('should create palette after onload', () => {
       const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, mockInput, mockContext);
 
@@ -156,6 +199,7 @@ describe('PaletteMRC', () => {
       const mockPaletteConstructor = getMockPaletteConstructor();
       expect(mockPaletteConstructor).toHaveBeenCalled();
       expect(mockPaletteConstructor.mock.calls[0][0]).toEqual(['#ff0000', '#00ff00', '#0000ff']);
+      expect(mockPlugin.app.metadataCache.getFirstLinkpathDest).not.toHaveBeenCalled();
       expect(paletteMrc.palette.colors).toEqual(['#ff0000', '#00ff00', '#0000ff']);
     });
 
@@ -208,7 +252,8 @@ describe('PaletteMRC', () => {
       paletteMrc.update();
 
       const settings = getMockPaletteConstructor().mock.calls[0][1];
-      expect(settings).toBe(Status.INVALID_SETTINGS);
+      expect(settings.height).toBe(defaultSettings.height);
+      expect(settings.width).toBe(defaultSettings.width);
     });
   });
 
@@ -254,6 +299,72 @@ describe('PaletteMRC', () => {
 
       expect(parseUrl).toHaveBeenCalledWith('coolors.co/palette/test');
       expect(paletteMrc.palette.colors).toEqual(['#ffffff', '#000000']);
+    });
+  });
+
+  describe('Internal Links', () => {
+    const internalLinkTestCases = [
+      { input: '[[Three laws of motion]]', valid: true, extractedFile: 'Three laws of motion' },
+      { input: '[[Three laws of motion.md]]', valid: true, extractedFile: 'Three laws of motion' },
+      { input: '[Three laws of motion](Three % 20laws % 20of % 20motion)', valid: true, extractedFile: 'Three laws of motion' },
+      { input: '[Three laws of motion](Three % 20laws % 20of % 20motion.md)', valid: true, extractedFile: 'Three laws of motion' },
+      { input: '[[About Obsidian#Links are first - class citizens]]', valid: true, extractedFile: 'About Obsidian' },
+      { input: '[[Help and support#Questions and advice#Report bugs and request features]]', valid: true, extractedFile: 'Help and support' },
+      { input: '[[2023-01-01# ^ 37066d]]', valid: true, extractedFile: '2023-01-01' },
+      { input: '[[Example | Custom name]]', valid: true, extractedFile: 'Example' },
+      { input: '[Custom name](Example.md)', valid: true, extractedFile: 'Example.md' },
+      { input: '[Section name](Example.md#Details)', valid: true, extractedFile: 'Example.md' },
+    ];
+
+    test.each(internalLinkTestCases)('$input', ({ input, valid, extractedFile }) => {
+      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, input, mockContext);
+      paletteMrc.update();
+
+      expect(paletteMrc.wikiLinkTestRegex.test(input)).toBe(valid);
+      expect(getMockPaletteConstructor()).toHaveBeenCalled();
+      expect(mockPlugin.app.metadataCache.getFirstLinkpathDest)
+        .toHaveBeenCalledWith(extractedFile, mockContext.sourcePath);
+      expect(paletteMrc.palette.colors).toHaveLength(valid ? 1 : 0);
+      expect(paletteMrc.palette.colors).toEqual(['#ff0000']);
+    });
+
+    it('handles null file resolution', () => {
+      mockPlugin.app.metadataCache.getFirstLinkpathDest.mockReturnValue(null);
+
+      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, '[[Non-existent file]]', mockContext);
+      paletteMrc.update();
+
+      expect(paletteMrc.palette.colors).toEqual(['[[Non-existent file]]']);
+    });
+
+    it('handles missing frontmatter', () => {
+      mockPlugin.app.metadataCache.getFileCache.mockImplementation((tFile: any) => {
+        if (tFile) return { frontmatter: null };
+        return null;
+      });
+
+      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, '[[Some file]]', mockContext);
+      paletteMrc.update();
+
+      expect(paletteMrc.palette.colors).toEqual(['[[Some file]]']);
+    });
+
+    it('handles file without color property in frontmatter', () => {
+      mockPlugin.app.metadataCache.getFileCache.mockImplementation((tFile: any) => {
+        if (tFile) {
+          return {
+            frontmatter: {
+              Name: 'Mock Alias',
+            },
+          };
+        }
+        return null;
+      });
+
+      const paletteMrc = new PaletteMRC(mockPlugin, mockContainerEl, '[[Some file]]', mockContext);
+      paletteMrc.update();
+
+      expect(paletteMrc.palette.colors).toEqual([null]);
     });
   });
 

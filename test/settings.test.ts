@@ -104,6 +104,8 @@ describe('defaultSettings', () => {
       'hover',
       'hideText',
       'override',
+      'propertyKeyAlias',
+      'propertyKeyColor',
     ];
 
     expect(Object.keys(defaultSettings).sort()).toEqual(expectedKeys.sort());
@@ -113,6 +115,36 @@ describe('defaultSettings', () => {
     expect(defaultSettings.noticeDuration).toBe(10000);
     expect(defaultSettings.reloadDelay).toBe(5);
     expect(defaultSettings.direction).toBe(Direction.Column);
+    expect(defaultSettings.propertyKeyAlias).toBe('Name');
+    expect(defaultSettings.propertyKeyColor).toBe('Color');
+  });
+});
+
+describe('SettingsTab.isReservedProperty', () => {
+  let tab: SettingsTab;
+
+  beforeEach(() => {
+    ({ tab } = createSettingsTab());
+  });
+
+  it.each([
+    'tags',
+    'aliases',
+    'cssclasses',
+    'publish',
+    'permalink',
+    'description',
+    'image',
+    'cover',
+    'tag',
+    'alias',
+    'cssclass',
+  ])('returns true for reserved property %s', (property) => {
+    expect(tab.isReservedProperty(property)).toBe(true);
+  });
+
+  it.each(['Name', 'Color', 'MyLabel', ''])('returns false for non-reserved property %s', (property) => {
+    expect(tab.isReservedProperty(property)).toBe(false);
   });
 });
 
@@ -151,6 +183,8 @@ describe('SettingsTab.display', () => {
           defaultSettings.height.toString(),
           defaultSettings.width.toString(),
           (defaultSettings.noticeDuration / 1000).toString(),
+          defaultSettings.propertyKeyAlias,
+          defaultSettings.propertyKeyColor,
         ])
       );
     });
@@ -200,6 +234,19 @@ describe('SettingsTab.display', () => {
 
       expect(plugin.settings.noticeDuration).toBe(15000);
       expect(plugin.saveSettings).toHaveBeenCalled();
+    });
+
+    it('saves property key aliases', async () => {
+      const { texts } = captureControls();
+      tab.display();
+
+      texts[4].triggerChange('Label');
+      texts[5].triggerChange('Hex');
+      await Promise.resolve();
+
+      expect(plugin.settings.propertyKeyAlias).toBe('Label');
+      expect(plugin.settings.propertyKeyColor).toBe('Hex');
+      expect(plugin.saveSettings).toHaveBeenCalledTimes(2);
     });
 
     it('saves toggle settings', async () => {
@@ -273,6 +320,22 @@ describe('SettingsTab.display', () => {
       expect(plugin.settings.noticeDuration).toBe(originalNoticeDuration);
       expect(plugin.saveSettings).not.toHaveBeenCalled();
     });
+
+    it('shows Notice and does not save reserved property keys', async () => {
+      const { texts } = captureControls();
+      tab.display();
+      const originalAlias = plugin.settings.propertyKeyAlias;
+      const originalColor = plugin.settings.propertyKeyColor;
+
+      texts[4].triggerChange('tags');
+      texts[5].triggerChange('alias');
+      await Promise.resolve();
+
+      expect(Notice).toHaveBeenCalledTimes(2);
+      expect(plugin.settings.propertyKeyAlias).toBe(originalAlias);
+      expect(plugin.settings.propertyKeyColor).toBe(originalColor);
+      expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
   });
 });
 
@@ -321,6 +384,7 @@ describe('SettingsTab.hide', () => {
   ['errorPulse', false],
   ['noticeDuration', 5000],
   ['copyFormat', CopyFormat.Value],
+  ['propertyKeyAlias', 'Custom'],
 ] as const)('does not update palettes when only %s changes', (key, value) => {
     tab.display();
     plugin.settings[key] = value as never;
